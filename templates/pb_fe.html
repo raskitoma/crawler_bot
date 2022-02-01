@@ -1,0 +1,652 @@
+<!DOCTYPE html>
+<html lang="EN-US">
+  <head>
+    <title>Plazabot Logs</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <!-- CSS only -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0-beta1/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-giJF6kkoqNQ00vy+HMDP7azOuL0xtbfIcaT9wjKHr8RbDVddVHyTfAAsrekwKmP1" crossorigin="anonymous">    
+    <link href="https://cdn.datatables.net/1.10.23/css/jquery.dataTables.min.css" rel="stylesheet" media="screen">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.59.1/codemirror.min.css" integrity="sha512-MWdvo/Qqcf4pY1ecQUB1uBn0qLp19U/qJ1Rpp2BDZeuBA7YsFEwkvqR/+aG4BroPiAYDunKJ6X8R/Pmdt3p7oA==" crossorigin="anonymous" />    
+    <style>
+      .container {
+        max-width: 1000px;
+      }
+      .nice_textarea {
+        border: 1px solid #cccccc;
+        padding: 5px;
+        font-family: Tahoma, sans-serif;
+      }     
+      #confirmBox
+      {
+          display: none;
+          background-color: #eee;
+          border-radius: 5px;
+          border: 1px solid #aaa;
+          position: fixed;
+          width: 300px;
+          left: 50%;
+          margin-left: -150px;
+          padding: 6px 8px 8px;
+          box-sizing: border-box;
+          text-align: center;
+      }
+      #confirmBox .button {
+          background-color: #ccc;
+          display: inline-block;
+          border-radius: 3px;
+          border: 1px solid #aaa;
+          padding: 2px;
+          text-align: center;
+          width: 80px;
+          cursor: pointer;
+      }
+      #confirmBox .button:hover
+      {
+          background-color: #ddd;
+      }
+      #confirmBox .message
+      {
+          text-align: left;
+          margin-bottom: 8px;
+      }       
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <h1>Plazabot Logs</h1>
+    </div>
+    <hr>
+    <div>
+      <div class="form-check form-switch">
+        <input class="form-check-input" type="checkbox" id="crawler_engine">
+        <label class="form-check-label" for="crawler_engine" id="crawler_label">Crawler status</label>
+      </div>
+      <div class="form-check form-switch">
+        <input class="form-check-input" type="checkbox" id="pause_log">
+        <label class="form-check-label" for="pause_log">Pause log update</label>
+      </div>
+    </div>
+    <hr>
+    <div>
+      <button type="button" class="btn btn-secondary" id="show_signal_link">Show Signal Link QRCode</button>
+      <button type="button" class="btn btn-info" id="show_signal_register">Register a number with SignalCli</button>
+    </div>
+    <hr>
+    <div>
+      <table id="pblogs" class="display" style="width:100%"></table>
+    </div>
+    <!-- Text editor -->
+    <hr>
+    <p>
+      <button id="inlineTEbtn" class="btn btn-primary" type="button" data-toggle="collapse" data-target="#inlineTextEditor" aria-expanded="false" aria-controls="inlineTextEditor">
+        Items File
+      </button>
+    </p>
+    <div class="collapse" id="inlineTextEditor">
+      <div class="card card-body">
+
+        <form class="nice_textarea">
+          <textarea id="config_file"></textarea>
+        </form>
+        <br>
+        <div class="row g-5">
+          <div class="col-auto"></div>
+          <div class="col-auto"></div>
+          <div class="col-auto">
+              <button type="button" class="btn btn-danger" id="config_cancel">Cancel</button>
+          </div>
+          <div class="col-auto">
+            <button type="button" class="btn btn-primary" id="config_save">Save</button>
+          </div>
+          <div class="col-auto"></div>
+        </div>
+
+      </div>
+    </div>
+    <!-- Clear skips -->
+    <hr>
+    <button type="button" class="btn btn-warning" id="skip_clear">Clear Skipables</button>
+    <!-- Confirm box -->
+    <div id="confirmBox">
+      <div class="message"></div>
+      <span class="button yes">Yes</span>
+      <span class="button no">No</span>
+    </div>
+    <!-- Text3 editor -->
+    <hr>
+    <p>
+      <button id="inlineTE1btn" class="btn btn-primary" type="button" data-toggle="collapse" data-target="#inlineTextEditor1" aria-expanded="false" aria-controls="inlineTextEditor1">
+        Settings File
+      </button>
+    </p>
+    <div class="collapse" id="inlineTextEditor1">
+      <div class="card card-body">
+
+        <form class="nice_textarea">
+          <textarea id="settings_file"></textarea>
+        </form>
+        <br>
+        <div class="row g-5">
+          <div class="col-auto"></div>
+          <div class="col-auto"></div>
+          <div class="col-auto">
+              <button type="button" class="btn btn-danger" id="settings_cancel">Cancel</button>
+          </div>
+          <div class="col-auto">
+            <button type="button" class="btn btn-primary" id="settings_save">Save</button>
+          </div>
+          <div class="col-auto"></div>
+        </div>
+
+      </div>
+    </div>
+    <!-- Full IMG div -->
+    <div class="float-xl-none position-absolute" visible="false" id="full_image" style="top: 100px; z-index: 2000;">
+      <img id="image_full" src="">
+    </div>
+    <!-- Modal -->
+    <div class="modal fade" id="log_details_modal" tabindex="-1" role="dialog" aria-labelledby="details_title" aria-hidden="true">
+      <div class="modal-dialog modal-dialog-centered" role="document">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" id="details_title">Details log #0</h5>
+          </div>
+          <div class="modal-body">
+            <div class="row g-2">
+              <div class="col-auto">
+                <strong>Timestamp:</strong>
+              </div>
+              <div class="col-auto" id="detail_timestamp">
+                El timestamp 
+              </div>
+            </div>
+            <div class="row g-2">
+              <div class="col-auto">
+                <strong>Description:</strong>
+              </div>
+              <div class="col-auto" id="detail_description">
+                la descripcion 
+              </div>
+            </div>
+            <hr>
+            <div class="row g-4">
+              <div class="col-auto">
+                <strong>Log Type:</strong>
+              </div>
+              <div class="col-auto" id="detail_type">
+                EVENT
+              </div>
+              <div class="col-auto">
+                <strong>Module:</strong>
+              </div>
+              <div class="col-auto" id="detail_module">
+                MODULE
+              </div>
+            </div>
+            <hr>
+            <div class="form-group shadow-textarea">
+              <textarea class="form-control z-depth-1" id="detail_source"></textarea>
+            </div>
+            <div id="detail_image">
+              <hr>
+                <img id="image_detail" src="">
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>    
+<!-- 
+    End Modal
+ -->
+    <!-- Modal 2 -->
+    <div class="modal fade" id="signal_modal_register" tabindex="-1" role="dialog" aria-labelledby="register_title" aria-hidden="true">
+      <div class="modal-dialog modal-dialog-centered" role="document">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" id="register_title">Signal registration</h5>
+          </div>
+          <div class="modal-body">
+            <!-- Number -->
+            <div class="input-group mb-3">
+              <input type="text" class="form-control" placeholder="+12345678901" aria-label="Registration Phone: " aria-describedby="basic-addon2" id="phone_number">
+              <div class="input-group-append">
+                <button class="btn btn-outline-secondary" type="button" id="requesting_code">Request SMS</button>
+                <button class="btn btn-outline-secondary" type="button" id="requesting_audio">Request Call</button>
+              </div>
+            </div>
+            <!-- Code -->
+            <div class="input-group mb-3">
+              <input type="text" class="form-control" placeholder="123-456" aria-label="Activation Code: " aria-describedby="basic-addon2" id="activation_code">
+              <div class="input-group-append">
+                <button class="btn btn-outline-secondary" type="button" id="confirm_code">Confirm</button>
+              </div>
+            </div>
+            <!-- Code -->
+            <div class="input-group mb-3">
+              <input type="text" class="form-control" placeholder="Waiting..." disabled aria-describedby="basic-addon2" id="status_activacion">
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>    
+<!-- 
+    End Modal
+ -->
+    <!-- Modal 2 -->
+    <div class="modal fade" id="signal_modal_qr" tabindex="-1" role="dialog" aria-labelledby="qr_title" aria-hidden="true">
+      <div class="modal-dialog modal-dialog-centered" role="document">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" id="qr_title">Signal QR code link</h5>
+          </div>
+          <div class="modal-body">
+            <img id="signal_qr" src="">
+          </div>
+        </div>
+      </div>
+    </div>    
+<!-- 
+    End Modal
+ -->
+    <script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0-beta1/dist/js/bootstrap.bundle.min.js" integrity="sha384-ygbV9kiqUc6oa4msXn9868pTtWMgiQaeYH7/t7LECLbyPA2x65Kgf80OJFdroafW" crossorigin="anonymous"></script>    <script src="https://cdn.datatables.net/1.10.23/js/jquery.dataTables.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.59.1/codemirror.min.js" integrity="sha512-9fASXXoC6x4BKdqe6IcEYZnt4KPMiQx5YJIsiWevf2QpSXfPcXMj4MTzIbwQuKJRysBlRh1LGHIaQm/415WyEA==" crossorigin="anonymous"></script>
+  </body>
+  <script>
+    var crawler_stat = false;
+    var config_txt_obj = document.getElementById('config_file');
+    var settings_txt_obj = document.getElementById('settings_file');
+    var editor_data = null;
+    var editor_data1 = null;
+    var log_table = null;
+    var log_data = null;
+    var log_paused = false;
+    var base_root = window.location.origin;
+    var req_table = {{ req_table }};
+    var req_crawler = {{ req_crawler }};
+
+    function crawler_status() {
+      var jqxhr2 = $.get(base_root + '/Crawler/', function(){})
+        .done(function(data, status){
+          crawler_stat = data[1];
+          if (crawler_stat) {
+            $('#crawler_engine').prop('checked', true);
+            $('#crawler_label').text('Crawler is ON');
+          } else {
+            $('#crawler_engine').prop('checked', false);
+            $('#crawler_label').text('Crawler is OFF');
+          }
+        })
+        return crawler_stat;
+    }
+    
+    function iterationcraw() {
+      if (crawler_stat) {
+          var jqxhr7 = $.get(base_root + '/Crawler/status/', function(){})
+            .done(function(data, status){
+              runner = JSON.parse(data);
+              runner_text = 'Crawler is ON (Iteration: ' + runner[0] + ' - Line #' + runner[1] + ')';
+              $('#crawler_label').text(runner_text);
+            })
+      }
+    }
+
+    function populate_table() {
+      var jqxhr = $.get(base_root + '/Log/?log_type=ALL&log_order=desc&log_limit=100', function(){})
+        .done(function(data, status){
+          log_table.clear();
+          log_data = data[0];
+          $.each(log_data, function(key, value) {
+            if (typeof(value['id']) != "undefined"){
+              row_data = [ 
+                value['id'], 
+                value['timestamp'], 
+                value['type'], 
+                value['module'],
+                value['description']                            
+              ];
+            } else {
+              row_data = [ 
+                value[0], 
+                value[1], 
+                value[2], 
+                value[3],
+                value[4]                            
+              ];
+            }
+            log_table.row.add(row_data).draw(false);
+          })
+        })
+    }    
+
+    function doConfirm( msg, yesFn, noFn) {
+      var confirmBox = $('#confirmBox');
+      confirmBox.find('.message').html(msg);
+      confirmBox.find('.yes,.no').unbind().click(function(){
+        confirmBox.hide();
+      });
+      confirmBox.find('.yes').click(yesFn);
+      confirmBox.find('.no').click(noFn);
+      confirmBox.show();
+    }
+
+    function makeid(length) {
+      var result           = '';
+      var characters       = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+      var charactersLength = characters.length;
+      for ( var i = 0; i < length; i++ ) {
+          result += characters.charAt(Math.floor(Math.random() * charactersLength));
+      }
+      return result;
+    }
+
+    $(function(){
+      $('#crawler_engine').on('click', function(){
+        var jqxhr3 = $.post(base_root + '/Crawler/', function(){})
+        .done(function(data, status){
+          populate_table();
+          crawler_status();
+        })
+      })
+    })
+
+    $(function(){
+      $('#pause_log').on('click', function(){
+        if (log_paused) {
+          log_paused = false;
+          $('#pause_log').prop('checked', false);
+        } else {
+          log_paused = true;
+          $('#pause_log').prop('checked', true);
+        }
+      })
+    })
+
+    $(function(){
+      $('#show_signal_link').on('click', function(){
+        $('#signal_modal_qr').modal('show');
+        $('#signal_qr').attr('src', null);
+        my_path = base_root + '/link/?hash=' + makeid(15);
+        $('#signal_qr').attr('src', my_path);
+      })
+    })
+
+    $(function(){
+      $('#show_signal_register').on('click', function(){
+        $('#signal_modal_register').modal('show')
+      })
+    })
+
+    $(function(){
+      $('#requesting_audio').on('click', function(){
+        var phone_number = $('#phone_number').val();
+        var jqxhr15 = $.post(base_root + '/Signal/register/'+ phone_number +'/', { use_voice: true }, function(){})
+          .done(function(data, status){
+              $('#status_activacion').val('Please wait...');
+              if(data[1] == 201 ) {
+                $('#requesting_audio').prop('disabled', true);
+                $('#requesting_code').prop('disabled', true);
+                $('#phone_number').prop('disabled', true);
+                $('#status_activacion').val('You should receive a call soon... 20s for buttons!');
+                setTimeout(function(){
+                  $('#status_activacion').val('Ready!');
+                  $('#requesting_audio').prop('disabled', false);
+                  $('#requesting_code').prop('disabled', false);
+                  $('#phone_number').prop('disabled', false);
+                }, 20000);
+              } else {
+                $('#status_activacion').val('[' + data[1] + '] ' + data[0]) 
+              }
+          })
+      })
+    })
+
+    $(function(){
+      $('#requesting_code').on('click', function(){
+        var phone_number = $('#phone_number').val();
+        var jqxhr15 = $.post(base_root + '/Signal/register/'+ phone_number +'/', function(){})
+          .done(function(data, status){
+            $('#status_activacion').val('Please wait...');
+              if(data[1] == 201 ) {
+                $('#requesting_audio').prop('disabled', true);
+                $('#requesting_code').prop('disabled', true);
+                $('#phone_number').prop('disabled', true);
+                $('#status_activacion').val('Please check your phone for SMS... 20s for buttons!');
+                setTimeout(function(){
+                  $('#status_activacion').val('Ready!');
+                  $('#status_activacion').val('Ready');
+                  $('#requesting_audio').prop('disabled', false);
+                  $('#requesting_code').prop('disabled', false);
+                  $('#phone_number').prop('disabled', false);
+                }, 20000); 
+              } else {
+                $('#status_activacion').val('[' + data[1] + '] ' + data[0]) 
+              }
+          })
+      })
+    })
+
+    $(function(){
+      $('#confirm_code').on('click', function(){
+        var phone_number = $('#phone_number').val();
+        var code = $('#activation_code').val();
+        var jqxhr20 = $.post(base_root + '/Signal/register/'+ phone_number +'/activate/' + code + '/', function(){})
+          .done(function(data, status){
+            $('#status_activacion').val('Please wait...');
+              if(data[1] == 201 ) {
+                $('#requesting_audio').prop('disabled', true);
+                $('#confirm_code').prop('disabled', true);
+                $('#activation_code').prop('disabled', true);
+                $('#requesting_code').prop('disabled', true);
+                $('#phone_number').prop('disabled', true);
+                $('#status_activacion').val('Confirming code... 20s for buttons!');
+                setTimeout(function(){
+                  $('#status_activacion').val('Ready!');
+                  $('#requesting_audio').prop('disabled', false);
+                  $('#confirm_code').prop('disabled', false);
+                  $('#activation_code').prop('disabled', false);
+                  $('#requesting_code').prop('disabled', false);
+                  $('#phone_number').prop('disabled', false);
+                }, 20000);             
+            } else {
+                $('#status_activacion').val('[' + data[1] + '] ' + data[0]) 
+              }
+
+          })
+      })
+    })
+
+    //
+    // Starting once document is loaded.
+    //
+    $(document).ready(function() {      
+      $('#full_image').hide();
+
+      log_data = null;
+      table_cols = [
+        { title: "Id" },
+        { title: "Timestamp" },
+        { title: "Type" },
+        { title: "Module" },
+        { title: "Description" }
+      ]
+      dummy_data = [
+        [ '', '', '', '', '' ]
+      ]
+      log_table = $('#pblogs').DataTable({
+        order: [[ 0, 'desc' ]],
+        data : dummy_data,
+        columns : table_cols
+      });     
+
+      populate_table();
+      crawler_status();
+      iterationcraw();
+
+      $(function(){
+        $('#filter_btn').on('click', function(){
+          my_filter = $('#filter_log').children('option:selected').val();
+          var jqxhr4 = $.get(base_root + '/Log/?log_type=' + my_filter + '&log_order=desc', function(){})
+          .done(function(data, satus){
+            log_table.clear();
+            log_data = data[0];
+            $.each(log_data, function(key, value) {
+              log_table.row.add(value).draw();
+            })
+            log_table.draw();
+          })
+        })
+      })
+
+      $('#pblogs tbody').on('click', 'tr', function(){
+        var data = log_table.row(this).data();
+        log_id = data[0];
+        $('#details_title').text('Details log #' + log_id);
+
+        // Getting data
+        var jqxhr5 = $.get(base_root + '/Log/'+ log_id +'/', function(){})
+          .done(function(data, status){
+            detail = data[0];
+            $('#detail_timestamp').text(detail['timestamp']);
+            $('#detail_description').text(detail['description']);
+            $('#detail_type').text(detail['type']);
+            $('#detail_module').text(detail['module']);
+            detail_data = detail['data'];
+            obj = $('#detail_source');
+            if (detail_data) {
+              if(detail_data.length > 0) {
+                obj.text(detail_data);
+                obj.prop('visible', true);
+                obj.show();
+              }
+            } else {
+              obj.text('');
+              obj.prop('visible', false);
+              obj.hide();
+            }
+
+            if (detail['image'] != null) {
+              var detail_image = decodeURIComponent(escape(unescape(encodeURIComponent(detail['image']))));
+              var detail_filen = detail['file_name'];
+              $('#image_detail').attr('src', `data:image/png;base64,${detail_image}`);
+              $('#image_detail').prop('width', 150);
+              $('#image_detail').prop('visible', true);
+              $('#image_detail').on('click', function(){
+                  $('#image_full').attr('src', `data:image/png;base64,${detail_image}`);
+                  $('#image_full').prop('visible', true);
+                  $('#full_image').show(500);
+                  $('#full_image').on('click', function(){
+                    $('#full_image').hide(500);
+                  })
+              });
+            } else {
+              $('#image_detail').attr('src', null);
+              $('#image_detail').prop('visible', false);
+            }
+  
+            $('#log_details_modal').modal('show');
+
+          })
+
+      })
+
+      $('#log_details_modal').on('hidden.bs.modal', function(){
+          $('#full_image').hide(500);
+      });
+
+      var editor2 = CodeMirror.fromTextArea(config_txt_obj, {
+        lineNumbers: true,
+        lineWrapping: true,
+        mode: "text/html",
+        autofocus: true,
+        matchBrackets: true
+      });
+
+      var editor3 = CodeMirror.fromTextArea(settings_txt_obj, {
+        lineNumbers: true,
+        lineWrapping: true,
+        mode: "text/html",
+        autofocus: true,
+        matchBrackets: true
+      });
+
+      // loading items file
+      var jqxhr6 = $.get(base_root + '/Maintenance/Items/', function(){})
+        .done(function(data, status){
+          array_data = JSON.parse(data);
+          editor_data = array_data.join('\n');
+          $('#inlineTextEditor').collapse('show');
+          editor2.setValue(editor_data);
+          $('#inlineTEbtn').on('click', function(){
+            $('#inlineTextEditor').collapse('toggle');
+          })
+          $('#config_cancel').on('click', function(){
+            editor2.setValue(editor_data);
+            $('#inlineTextEditor').collapse('hide');
+          })
+          $('#config_save').on('click', function(){
+            data = editor2.getValue();
+            editor_data = data;
+            array_data = data.split(/\r?\n/);
+            json_data = JSON.stringify(array_data);
+            var jqxhr6 = $.post(base_root + '/Maintenance/Items/', { config_data: json_data } )
+            $('#inlineTextEditor').collapse('hide');
+          })
+          setTimeout(function(){
+            $('#inlineTEbtn').trigger('click');
+          }, 500);
+        })
+
+      // loading settings file
+      var jqxhr9 = $.get(base_root + '/Maintenance/Config/', function(){})
+        .done(function(data, status){
+          array_data = JSON.parse(data);
+          editor_data1 = array_data.join('\n');
+          $('#inlineTextEditor1').collapse('show');
+          editor3.setValue(editor_data1);
+          $('#inlineTE1btn').on('click', function(){
+            $('#inlineTextEditor1').collapse('toggle');
+          })
+          $('#settings_cancel').on('click', function(){
+            editor3.setValue(editor_data1);
+            $('#inlineTextEditor1').collapse('hide');
+          })
+          $('#settings_save').on('click', function(){
+            data = editor3.getValue();
+            editor_data1 = data;
+            array_data = data.split(/\r?\n/);
+            json_data = JSON.stringify(array_data);
+            var jqxhr10 = $.post(base_root + '/Maintenance/Config/', { config_data: json_data } )
+            $('#inlineTextEditor1').collapse('hide');
+          })
+          setTimeout(function(){
+            $('#inlineTE1btn').trigger('click');
+          }, 500);
+        })
+    });
+  
+    $('#skip_clear').on('click', function(){
+      doConfirm('This will clear all skipable lines on config.<br>Are you sure?',
+        function yes(){
+          var jqxhr8 = $.post(base_root + '/Maintenance/Skip/Clean/', function(){})
+            .done(function(data, status){
+              populate_table();
+            });
+        },
+        function no(){
+          // Do nothing
+        });
+    });
+
+    const crawler_runner = setInterval(function(){
+      iterationcraw();
+    }, req_crawler );
+
+    const table_runner = setInterval(function(){
+      if (!log_paused) {
+        populate_table();
+      }
+    }, req_table );
+
+  </script>
+</html>

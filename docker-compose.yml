@@ -1,0 +1,83 @@
+#############################################
+# Plazabot - docker-compose.yml
+# (c)2021, Doubtfull Productions
+#--------------------------------------------
+# Master docker-compose config file
+#-------------------------------------------- 
+# TODO
+#-------------------------------------------- 
+version: '3'
+
+services:
+
+# Setting up basic containers
+
+## PostgreSQL container
+  db:
+    image: postgres:12.0
+    container_name: db
+    hostname: db
+    restart: always
+    ports:
+      - 5432:5432
+    networks: 
+      - pb-net
+    dns:
+      - 127.0.0.1
+    environment:
+      - POSTGRES_USER=plazabot
+      - POSTGRES_PASSWORD=plazabot
+      - POSTGRES_DB=plazabot
+    volumes:
+      - postgresql:/var/lib/postgresql
+      - postgresql_data:/var/lib/postgresql/data
+      - ${PWD}/docker-entrypoint-initdb.d:/docker-entrypoint-initdb.d
+      - ${PWD}/docker-entrypoint-initdb.d/docker_postgres_init.sql:/docker-entrypoint-initdb.d/docker_postgres_init.sql
+
+## Signal API cli
+  signal-api:
+    build: ./signal
+    image: signal:v2
+    container_name: signal-api
+    hostname: signal-api
+    restart: always
+    ports:
+      - 8080:8080
+    environment:
+      - PORT=8080
+      - SWAGURL=signal-api
+    networks: 
+      - pb-net
+    volumes:
+      - signal:/home/.local/share/signal-cli #map "signal-cli-config" folder on host system into docker container. the folder contains the password and cryptographic keys when a new number is registered
+
+## API - Crawler - Frontend
+  plazabot:
+    build: .
+    image: plazabot:v1
+    container_name: plazabot
+    hostname: plazabot
+    restart: always
+    links:
+      - signal-api
+    depends_on: 
+      - db
+      - signal-api
+    ports:
+      - 5123:5123
+    networks: 
+      - pb-net
+    environment: 
+      - DATABASE_URI=postgresql://plazabot:plazabot@db:5432/plazabot
+    volumes:
+      - bot_uploads:/uploads
+
+networks:
+  pb-net:
+    driver: bridge
+
+volumes:
+  postgresql:
+  postgresql_data:
+  bot_uploads:
+  signal:

@@ -1,0 +1,10 @@
+credentials.json
+__pycache__
+crawler_lin.lock
+crawler_run.lock
+z_items.cfg.bak
+browser_error.png
+geckodriver.log
+plazabot.db
+.signal
+.signal/signal-cli-config
